@@ -6,6 +6,8 @@
       config,
       lib,
       system,
+      pkgsCuda,
+      pkgsRocm,
       ...
     }:
     {
@@ -14,15 +16,42 @@
           pkgs = import inputs.nixpkgs { inherit system; };
           stdenv = pkgs.stdenv;
           scripts = config.packages.python-scripts;
+
+          cudaRuntimeLibPath = lib.makeLibraryPath (with pkgsCuda.cudaPackages; [
+            cuda_cudart
+            libcublas
+          ]);
+
+          rocmRuntimeLibPath = lib.makeLibraryPath (with pkgsRocm.rocmPackages; [
+            clr
+            hipblas
+            rocblas
+          ]);
+
+          runtimeLibPathFor =
+            name:
+            if name == "cuda" || name == "mpi-cuda" then
+              cudaRuntimeLibPath
+            else if name == "rocm" then
+              rocmRuntimeLibPath
+            else
+              "";
         in
         lib.pipe (config.packages) [
           (lib.concatMapAttrs (
-            name: package: {
+            name: package:
+            let
+              runtimeLibPath = runtimeLibPathFor name;
+            in
+            {
               ${name} = pkgs.mkShell {
                 name = "${name}";
                 inputsFrom = [ package ];
                 shellHook = ''
                   echo "Entering ${name} devShell"
+                  ${lib.optionalString (runtimeLibPath != "") ''
+                    export LD_LIBRARY_PATH="${runtimeLibPath}:$LD_LIBRARY_PATH"
+                  ''}
                 '';
               };
               "${name}-extra" =
@@ -41,7 +70,9 @@
                     ];
                     shellHook = ''
                       echo "Entering ${name} devShell"
-                      addToSearchPath "LD_LIBRARY_PATH" "${lib.getLib stdenv.cc.cc}/lib"
+                      export LD_LIBRARY_PATH="${lib.getLib stdenv.cc.cc}/lib${
+                        lib.optionalString (runtimeLibPath != "") ":${runtimeLibPath}"
+                      }:$LD_LIBRARY_PATH"
                     '';
                   };
             }
