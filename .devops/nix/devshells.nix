@@ -47,6 +47,9 @@
               ${name} = pkgs.mkShell {
                 name = "${name}";
                 inputsFrom = [ package ];
+                packages = [
+                  pkgs.python3Packages.huggingface-hub
+                ];
                 shellHook = ''
                   echo "Entering ${name} devShell"
                   ${lib.optionalString (runtimeLibPath != "") ''
@@ -67,6 +70,7 @@
                     # Extra packages that *may* be used by some scripts
                     packages = [
                         pkgs.python3Packages.tiktoken
+                        pkgs.python3Packages.huggingface-hub
                     ];
                     shellHook = ''
                       echo "Entering ${name} devShell"
