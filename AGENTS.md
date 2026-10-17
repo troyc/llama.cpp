@@ -1,3 +1,10 @@
+# Important context
+
+This is my clone of upstream llama.cpp, on a branch to get it to run on my nix machine.
+It has a direnv and flake.
+Typically I'll ask an agent to bring it up to date with master.
+Upstream AGENTS.md follows as-is.
+
 # Instructions for llama.cpp
 
 > [!IMPORTANT]
