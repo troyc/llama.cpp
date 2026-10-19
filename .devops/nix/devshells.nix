@@ -36,6 +36,15 @@
               rocmRuntimeLibPath
             else
               "";
+
+          # Without this, FindCUDAToolkit links libcuda from the toolkit's stubs/
+          # directory and bakes it into RUNPATH, so binaries load the stub instead
+          # of the NixOS driver ("CUDA driver is a stub library").
+          cudaDriverHookFor =
+            name:
+            lib.optionalString (name == "cuda" || name == "mpi-cuda") ''
+              export CMAKE_LIBRARY_PATH="/run/opengl-driver/lib''${CMAKE_LIBRARY_PATH:+:$CMAKE_LIBRARY_PATH}"
+            '';
         in
         lib.pipe (config.packages) [
           (lib.concatMapAttrs (
@@ -55,6 +64,7 @@
                   ${lib.optionalString (runtimeLibPath != "") ''
                     export LD_LIBRARY_PATH="${runtimeLibPath}:$LD_LIBRARY_PATH"
                   ''}
+                  ${cudaDriverHookFor name}
                 '';
               };
               "${name}-extra" =
@@ -77,6 +87,7 @@
                       export LD_LIBRARY_PATH="${lib.getLib stdenv.cc.cc}/lib${
                         lib.optionalString (runtimeLibPath != "") ":${runtimeLibPath}"
                       }:$LD_LIBRARY_PATH"
+                      ${cudaDriverHookFor name}
                     '';
                   };
             }
