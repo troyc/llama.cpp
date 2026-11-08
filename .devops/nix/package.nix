@@ -134,7 +134,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   };
 
   # Builds the webui locally, taking care not to require updating any sha256 hash.
-  webui = stdenvNoCC.mkDerivation {
+  passthru.webui = stdenvNoCC.mkDerivation {
     pname = "webui";
     version = llamaVersion;
     src = lib.cleanSource ../../tools/ui;
@@ -156,7 +156,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   };
 
   postPatch = lib.optionalString useWebUi ''
-    cp -r ${finalAttrs.webui} tools/ui/dist
+    cp -r ${finalAttrs.passthru.webui} tools/ui/dist
     chmod -R u+w tools/ui/dist
   '';
 
