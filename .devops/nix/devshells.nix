@@ -40,10 +40,12 @@
           # Without this, FindCUDAToolkit links libcuda from the toolkit's stubs/
           # directory and bakes it into RUNPATH, so binaries load the stub instead
           # of the NixOS driver ("CUDA driver is a stub library").
+          # LD_LIBRARY_PATH lets programs run in the shell find libcuda.so.1 (e.g. CMake native arch detection).
           cudaDriverHookFor =
             name:
             lib.optionalString (name == "cuda" || name == "mpi-cuda") ''
               export CMAKE_LIBRARY_PATH="/run/opengl-driver/lib''${CMAKE_LIBRARY_PATH:+:$CMAKE_LIBRARY_PATH}"
+              export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             '';
         in
         lib.pipe (config.packages) [
@@ -61,6 +63,8 @@
                 ];
                 shellHook = ''
                   echo "Entering ${name} devShell"
+                  # mkShell sets SOURCE_DATE_EPOCH, which makes ggml default to GGML_NATIVE=OFF.
+                  unset SOURCE_DATE_EPOCH
                   ${lib.optionalString (runtimeLibPath != "") ''
                     export LD_LIBRARY_PATH="${runtimeLibPath}:$LD_LIBRARY_PATH"
                   ''}
@@ -84,6 +88,7 @@
                     ];
                     shellHook = ''
                       echo "Entering ${name} devShell"
+                      unset SOURCE_DATE_EPOCH
                       export LD_LIBRARY_PATH="${lib.getLib stdenv.cc.cc}/lib${
                         lib.optionalString (runtimeLibPath != "") ":${runtimeLibPath}"
                       }:$LD_LIBRARY_PATH"
