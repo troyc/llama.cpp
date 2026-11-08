@@ -208,12 +208,8 @@ effectiveStdenv.mkDerivation (finalAttrs: {
       (cmakeBool "GGML_RPC" useRpc)
     ]
     ++ optionals useCuda [
-      (
-        with cudaPackages.flags;
-        cmakeFeature "CMAKE_CUDA_ARCHITECTURES" (
-          builtins.concatStringsSep ";" (map dropDot cudaCapabilities)
-        )
-      )
+      # omen: RTX 5090 only (ggml turns 120 into 120a)
+      (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "120")
     ]
     ++ optionals useRocm [
       (cmakeFeature "CMAKE_HIP_COMPILER" "${rocmPackages.llvm.clang}/bin/clang")
